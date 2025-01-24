@@ -4,7 +4,7 @@ from project.database import Base
 
 
 class Manufacturers(Base):
-    __tablename__ = "manufacturers"
+    __tablename__ = "tbl_manufacturers"
 
     manufacturer_id = Column(Integer, primary_key=True, index=True)
     manufacturer_name = Column(String(30), index=True)

@@ -5,7 +5,7 @@ from project.database import Base
 
 
 class Users(Base):
-    __tablename__ = "users"
+    __tablename__ = "tbl_users"
 
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(30), index=True)
@@ -17,7 +17,7 @@ class Users(Base):
 
 
 class PersonalData(Base):
-    __tablename__ = "personal_data"
+    __tablename__ = "tbl_personal_data"
 
     personal_data_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), index=True)
@@ -29,7 +29,7 @@ class PersonalData(Base):
 
 
 class DeliveryData(Base):
-    __tablename__ = "delivery_data"
+    __tablename__ = "tbl_delivery_data"
 
     delivery_data_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), index=True)

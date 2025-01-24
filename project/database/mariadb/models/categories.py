@@ -5,7 +5,7 @@ from project.database import Base
 
 
 class Categories(Base):
-    __tablename__ = "categories"
+    __tablename__ = "tbl_categories"
 
     category_id = Column(Integer, primary_key=True, index=True)
 
@@ -13,7 +13,7 @@ class Categories(Base):
 
 
 class CategoriesTranslations(Base):
-    __tablename__ = "categories_translations"
+    __tablename__ = "tbl_categories_translations"
 
     translation_id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("categories.category_id"), index=True)

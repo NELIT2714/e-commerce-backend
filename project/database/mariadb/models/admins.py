@@ -5,7 +5,7 @@ from project.database import Base
 
 
 class Admins(Base):
-    __tablename__ = "admins"
+    __tablename__ = "tbl_admins"
 
     admin_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(30), unique=True, index=True)
@@ -16,7 +16,7 @@ class Admins(Base):
 
 
 class AdminsPermissions(Base):
-    __tablename__ = "admins_permissions"
+    __tablename__ = "tbl_admins_permissions"
 
     permission_id = Column(Integer, primary_key=True, index=True)
     admin_id = Column(Integer, ForeignKey("admins.admin_id"), index=True)
