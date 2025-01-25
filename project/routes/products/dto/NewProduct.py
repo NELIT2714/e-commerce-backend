@@ -26,11 +26,6 @@ class Description(BaseModel):
     ingredients: Optional[MultiLangField] = Field(None, description="Ingredients description")
 
 
-class Photo(BaseModel):
-    extension: Literal["jpeg", "jpg", "png", "heic", "svg", "webp"]
-    content: str
-
-
 class NewProduct(BaseModel):
     name: str
     article: str
@@ -38,4 +33,3 @@ class NewProduct(BaseModel):
     manufacturer_id: int
     description: Description
     price: Price
-    photos: list[Photo]
