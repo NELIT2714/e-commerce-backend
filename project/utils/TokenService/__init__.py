@@ -13,7 +13,7 @@ class TokenConfig:
 
 class TokenCreator(ABC):
     @abstractmethod
-    async def create_token(self, admin_id: int, username: str, ttl: int = TokenConfig.DEFAULT_TTL) -> str:
+    async def create_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
         pass
 
 
@@ -24,12 +24,14 @@ class TokenVerifier(ABC):
 
 
 class JWTTokenCreator(TokenCreator):
-    async def create_token(self, admin_id: int, username: str, ttl: int = TokenConfig.DEFAULT_TTL) -> str:
+    async def create_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
         payload = {
-            "admin_id": admin_id,
-            "username": username,
             "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60)
         }
+        payload.update(kwargs)
+
+        print(payload)
+
         token = jwt.encode(payload, TokenConfig.SECRET_KEY, algorithm=TokenConfig.ALGORITHM)
         return token
 
@@ -58,8 +60,8 @@ class TokenService:
         self._token_creator = token_creator
         self._token_verifier = token_verifier
 
-    async def generate_token(self, admin_id: int, username: str, ttl: int = TokenConfig.DEFAULT_TTL):
-        return await self._token_creator.create_token(admin_id, username, ttl)
+    async def generate_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs):
+        return await self._token_creator.create_token(ttl=ttl, **kwargs)
 
     async def check_token(self, token: str):
         return await self._token_verifier.verify_token(token)

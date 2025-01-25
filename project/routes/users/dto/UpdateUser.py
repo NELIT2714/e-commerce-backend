@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel, constr, EmailStr
+from pydantic import BaseModel, StringConstraints, constr, EmailStr
 
 
 class PersonalData(BaseModel):
@@ -17,13 +17,11 @@ class DeliveryData(BaseModel):
 
 
 class Password(BaseModel):
-    old: Optional[constr(min_length=8, max_length=32)] = None
-    new: Optional[constr(min_length=8, max_length=32)] = None
+    old: Optional[Annotated[str, StringConstraints(min_length=8, max_length=32)]] = None
+    new: Optional[Annotated[str, StringConstraints(min_length=8, max_length=32)]] = None
 
 
 class UpdateUser(BaseModel):
-    username: Optional[constr(min_length=2, max_length=30)] = None
+    username: Optional[Annotated[str, StringConstraints(min_length=2, max_length=30)]] = None
     email: Optional[EmailStr] = None
-    personal_data: Optional[PersonalData] = None
-    delivery_data: Optional[DeliveryData] = None
     password: Optional[Password] = None

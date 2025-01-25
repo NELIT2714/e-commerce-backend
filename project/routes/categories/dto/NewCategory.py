@@ -1,7 +1,7 @@
 from typing import Optional
 from typing_extensions import Annotated
 
-from pydantic import BaseModel, constr, StringConstraints
+from pydantic import BaseModel, StringConstraints
 
 
 class MultiLangField(BaseModel):

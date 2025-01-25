@@ -1,3 +1,6 @@
+import bcrypt
+import datetime
+
 from fastapi import HTTPException
 from pymysql import err
 from sqlalchemy import select
@@ -6,8 +9,9 @@ from sqlalchemy.orm import selectinload
 
 from project import logger
 from project.database import async_session
-from project.database.crud.categories import get_category_dict
-from project.database.mariadb.models import Categories, CategoriesTranslations, Users
+from project.database.mariadb.models import Users, Sessions
+
+from project.utils import TokenService
 
 
 async def get_user_dict(user_object):
@@ -38,7 +42,7 @@ async def get_users(dump: bool = False):
             ))
             users = users_query.scalars().all()
 
-            return [await get_user_dict(users) for user in users] if dump else users
+            return [await get_user_dict(user) for user in users] if dump else users
     except (err.MySQLError, SQLAlchemyError) as e:
         logger.error(f"Database error: {e}")
         await session_db.rollback()
@@ -47,7 +51,7 @@ async def get_users(dump: bool = False):
 
 async def get_user(user_id: int = None, username: str = None, email: str = None, dump: bool = False):
     if not any([user_id, username, email]):
-        raise HTTPException(status_code=400, detail="At least one search parameter (user_id, username, email) must be provided")
+        raise ValueError("At least one search parameter (user_id, username, email) must be provided")
 
     try:
         async with async_session() as session_db:
@@ -66,7 +70,7 @@ async def get_user(user_id: int = None, username: str = None, email: str = None,
             user_result = await session_db.execute(query)
             user = user_result.scalar_one_or_none()
 
-            if user is None:
+            if user is None and dump:
                 raise HTTPException(status_code=404, detail="User not found")
 
             return await get_user_dict(user) if dump else user
@@ -76,24 +80,37 @@ async def get_user(user_id: int = None, username: str = None, email: str = None,
         raise HTTPException(status_code=500, detail="Database error")
 
 
-async def sign_up(user_data: dict, dump: bool = False):
+async def sign_up(user_data: dict):
     try:
         async with async_session() as session_db:
+            if await get_user(email=user_data["email"]):
+                raise HTTPException(status_code=400, detail="Email already in use")
+
             user = Users(
                 username=user_data["username"],
                 email=user_data["email"],
+                password_hash=bcrypt.hashpw(user_data["password"].encode(), bcrypt.gensalt())
             )
 
+            session_db.add(user)
             await session_db.flush()
 
-            for language, category_name in category_data["category_name"].items():
-                translation = CategoriesTranslations(category_id=category.category_id, language=language,
-                                                     category_name=category_name)
-                session_db.add(translation)
-
+            token_service = TokenService()
+            token = await token_service.generate_token(user_id=user.user_id, username=user.username)
+            
+            session = Sessions(
+                user_id=user.user_id,
+                os=user_data["metadata"]["os"],
+                browser=user_data["metadata"]["browser"],
+                device=user_data["metadata"]["device"],
+                ip=user_data["metadata"]["ip"],
+                token=token,
+                created_at=datetime.datetime.now()
+            )
+            session_db.add(session)
             await session_db.commit()
 
-            return await get_category(category.category_id, dump=dump)
+            return token
     except (err.MySQLError, SQLAlchemyError) as e:
         logger.error(f"Database error: {e}")
         await session_db.rollback()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import Column, DateTime, Integer, LargeBinary, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
 
 from project.database import Base
@@ -10,10 +10,11 @@ class Users(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(30), index=True)
     email = Column(String(254), unique=True, index=True)
-    password_hash = Column(Text, nullable=False)
+    password_hash = Column(LargeBinary, nullable=False)
 
-    personal_data = relationship("PersonalData", back_populates="user")
-    delivery_data = relationship("DeliveryData", back_populates="user")
+    sessions = relationship("Sessions", back_populates="user", uselist=True)
+    personal_data = relationship("PersonalData", back_populates="user", uselist=False)
+    delivery_data = relationship("DeliveryData", back_populates="user", uselist=False)
 
 
 class PersonalData(Base):
@@ -39,3 +40,18 @@ class DeliveryData(Base):
     address = Column(String(255), nullable=True, default=None)
 
     user = relationship("Users", back_populates="delivery_data")
+
+
+class Sessions(Base):
+    __tablename__ = "tbl_users_sessions"
+
+    session_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("tbl_users.user_id"), index=True)
+    os = Column(String(50), nullable=False)
+    browser = Column(String(50), nullable=False)
+    device = Column(String(100), nullable=False)
+    ip = Column(String(20), nullable=False)
+    token = Column(Text, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    user = relationship("Users", back_populates="sessions")
