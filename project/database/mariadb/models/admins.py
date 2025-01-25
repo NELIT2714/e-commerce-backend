@@ -19,7 +19,7 @@ class AdminsPermissions(Base):
     __tablename__ = "tbl_admins_permissions"
 
     permission_id = Column(Integer, primary_key=True, index=True)
-    admin_id = Column(Integer, ForeignKey("admins.admin_id"), index=True)
+    admin_id = Column(Integer, ForeignKey("tbl_admins.admin_id"), index=True)
     permission = Column(String(100))
 
     admin = relationship("Admins", back_populates="permissions")

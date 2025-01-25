@@ -16,7 +16,7 @@ class CategoriesTranslations(Base):
     __tablename__ = "tbl_categories_translations"
 
     translation_id = Column(Integer, primary_key=True, index=True)
-    category_id = Column(Integer, ForeignKey("categories.category_id"), index=True)
+    category_id = Column(Integer, ForeignKey("tbl_categories.category_id"), index=True)
     language = Column(String(5), nullable=False)
     category_name = Column(String(30), nullable=False)
 

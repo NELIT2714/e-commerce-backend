@@ -17,10 +17,10 @@ class Users(Base):
 
 
 class PersonalData(Base):
-    __tablename__ = "tbl_personal_data"
+    __tablename__ = "tbl_users_personal_data"
 
     personal_data_id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), index=True)
+    user_id = Column(Integer, ForeignKey("tbl_users.user_id"), index=True)
     first_name = Column(String(50), nullable=True, default=None)
     last_name = Column(String(50), nullable=True, default=None)
     phone_number = Column(String(20), nullable=True, default=None)
@@ -29,10 +29,10 @@ class PersonalData(Base):
 
 
 class DeliveryData(Base):
-    __tablename__ = "tbl_delivery_data"
+    __tablename__ = "tbl_users_delivery_data"
 
     delivery_data_id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), index=True)
+    user_id = Column(Integer, ForeignKey("tbl_users.user_id"), index=True)
     country = Column(String(100), nullable=True, default=None)
     city = Column(String(100), nullable=True, default=None)
     postcode = Column(String(20), nullable=True, default=None)
