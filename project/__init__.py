@@ -18,7 +18,7 @@ async def lifespan(app_class: FastAPI):
 
 
 app = FastAPI(
-    title="MaximumStyle API",
+    title="E-commerce API",
     debug=True if os.getenv("MODE") == "DEV" else False,
     docs_url="/",
     redoc_url="/redoc" if os.getenv("MODE") == "DEV" else None,
@@ -37,7 +37,7 @@ app.add_middleware(
 router = APIRouter()
 router_v1 = APIRouter(prefix="/v1")
 
-from .routes import health, users, categories, manufacturers
+from .routes import health, categories
 
 router.include_router(router_v1)
 app.include_router(router)
