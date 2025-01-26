@@ -1,4 +1,5 @@
 import os
+import time
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -17,8 +18,6 @@ async def create_tables():
 
 
 async def check_mariadb_connection():
-    import time
-
     start_time = time.time()
     try:
         async with async_session() as session:
