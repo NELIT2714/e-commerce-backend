@@ -8,7 +8,7 @@ class Users(Base):
     __tablename__ = "tbl_users"
 
     user_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(30), index=True)
+    username = Column(String(30), unique=True, index=True)
     email = Column(String(254), unique=True, index=True)
     password_hash = Column(LargeBinary, nullable=False)
 
