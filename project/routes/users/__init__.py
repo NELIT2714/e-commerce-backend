@@ -21,12 +21,6 @@ async def get_user_endpoint(user_id: int):
 @users_router.post("/sign-up/")
 async def user_signup_endpoint(user_data: NewUser):
     token = await sign_up(user_data.model_dump())
-    
-    user_data_dict = user_data.model_dump()
-    user_data_dict.pop("password", None)
-    user_data_dict.pop("repeated_password", None)
-
-    logger.info(f"Created new user {user_data_dict}")
     return JSONResponse(status_code=200, content={"token": token})
 
 
