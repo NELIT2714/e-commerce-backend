@@ -1,5 +1,4 @@
 import bcrypt
-import datetime
 
 from fastapi import HTTPException
 from pymysql import err
@@ -9,7 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from project import logger
 from project.database import async_session
-from project.database.mariadb.models import Users, Sessions
+from project.database.crud.sessions import create_session
+from project.database.mariadb.models import Users
 
 from project.utils import TokenService
 
@@ -83,6 +83,9 @@ async def get_user(user_id: int = None, username: str = None, email: str = None,
 async def sign_up(user_data: dict):
     try:
         async with async_session() as session_db:
+            if await get_user(username=user_data["username"]):
+                raise HTTPException(status_code=400, detail="Username already in use")
+            
             if await get_user(email=user_data["email"]):
                 raise HTTPException(status_code=400, detail="Email already in use")
 
@@ -97,19 +100,33 @@ async def sign_up(user_data: dict):
 
             token_service = TokenService()
             token = await token_service.generate_token(user_id=user.user_id, username=user.username)
-            
-            session = Sessions(
-                user_id=user.user_id,
-                os=user_data["metadata"]["os"],
-                browser=user_data["metadata"]["browser"],
-                device=user_data["metadata"]["device"],
-                ip=user_data["metadata"]["ip"],
-                token=token,
-                created_at=datetime.datetime.now()
-            )
-            session_db.add(session)
-            await session_db.commit()
 
+            await create_session(session_db=session_db, user=user, data=user_data, token=token)
+
+            logged_user = {"id": user.user_id, "username": user_data["username"], "email": user_data["email"]}
+            logger.info(f"Created new user {logged_user}")
+
+            return token
+    except (err.MySQLError, SQLAlchemyError) as e:
+        logger.error(f"Database error: {e}")
+        await session_db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+async def sign_in(user_data: dict):
+    try:
+        async with async_session() as session_db:
+            user = await get_user(username=user_data["username"])
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            if not bcrypt.checkpw(user_data["password"].encode(), user.password_hash):
+                raise HTTPException(status_code=401, detail="Incorrect password")
+            
+            token_service = TokenService()
+            token = await token_service.generate_token(user_id=user.user_id, username=user.username)
+
+            await create_session(session_db=session_db, user=user, data=user_data, token=token)
             return token
     except (err.MySQLError, SQLAlchemyError) as e:
         logger.error(f"Database error: {e}")
