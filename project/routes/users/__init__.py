@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from project import logger, router_v1
-from project.database.crud.users import sign_up
+from project.database.crud.users import sign_in, sign_up
 from project.routes.users.dto import LoginUser, NewUser, UpdateUser
 
 users_router = APIRouter(prefix="/users", tags=["Users"])
@@ -26,7 +26,8 @@ async def user_signup_endpoint(user_data: NewUser):
 
 @users_router.post("/sign-in/")
 async def user_signin_endpoint(user_data: LoginUser):
-    pass
+    token = await sign_in(user_data.model_dump())
+    return JSONResponse(status_code=200, content={"token": token})
 
 
 @users_router.patch("/update/{user_id}/")
