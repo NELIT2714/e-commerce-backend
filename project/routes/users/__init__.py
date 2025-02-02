@@ -10,11 +10,9 @@ from project.routes.users.dto import LoginUser, NewUser, UpdateUser, PersonalDat
 users_router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@users_router.get("/get/{user_id}/")
-async def get_user_endpoint(user_id: int, result_token: str = Depends(verify_token)):
-    if not user_id == result_token.data["token_data"]["user_id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired token")
-    user = await get_user(user_id=user_id, dump=True)
+@users_router.get("/get/me/")
+async def get_user_endpoint(result_token: str = Depends(verify_token)):
+    user = await get_user(user_id=result_token.data["token_data"]["user_id"], dump=True)
     return JSONResponse(status_code=status.HTTP_200_OK, content={"user": user})
 
 
@@ -30,22 +28,19 @@ async def user_signin_endpoint(user_data: LoginUser):
     return JSONResponse(status_code=status.HTTP_200_OK, content={"token": token})
 
 
-@users_router.patch("/update/account/{user_id}/")
-async def update_user_account_endpoint(user_id: int, account_data: UpdateUser, result_token = Depends(verify_token)):
-    if not user_id == result_token.data["token_data"]["user_id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired token")
-    updated_account = await update_account(user_id=user_id, account_data=account_data.model_dump(exclude_unset=True), token=result_token.token, user_data=account_data.model_dump())
+@users_router.patch("/update/account/")
+async def update_user_account_endpoint(account_data: UpdateUser, result_token = Depends(verify_token)):
+    await update_account(user_id=result_token.data["token_data"]["user_id"], account_data=account_data.model_dump(exclude_unset=True), token=result_token.token, user_data=account_data.model_dump())
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"ok": True})
 
 
-@users_router.patch("/update/personal-data/{user_id}/")
-async def update_user_personal_data_endpoint(user_id: int, personal_data: PersonalData, result_token: str = Depends(verify_token)):
-    if not user_id == result_token.data["token_data"]["user_id"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired token")
-    print(personal_data)
+@users_router.patch("/update/personal-data/")
+async def update_user_personal_data_endpoint(personal_data: PersonalData, result_token: str = Depends(verify_token)):
+    pass
 
 
-@users_router.delete("/delete/{user_id}/")
-async def delete_user_endpoint(user_id: int, result_token: str = Depends(verify_token)):
+@users_router.delete("/delete/me/")
+async def delete_user_endpoint(result_token: str = Depends(verify_token)):
     pass
 
 

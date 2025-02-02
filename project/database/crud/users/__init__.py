@@ -137,7 +137,6 @@ async def sign_in(user_data: dict):
 
 
 async def update_account(user_id: int, account_data: dict, token: str, user_data: dict):
-    print(user_data)
     try:
         async with async_session() as session_db:
             user = await get_user(user_id=user_id)
