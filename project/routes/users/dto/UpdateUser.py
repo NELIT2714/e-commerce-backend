@@ -1,6 +1,7 @@
 from typing import Annotated, Optional
 
-from pydantic import BaseModel, StringConstraints, constr, EmailStr
+from pydantic import BaseModel, StringConstraints, EmailStr
+from .NewUser import MetaData
 
 
 class PersonalData(BaseModel):
@@ -25,3 +26,25 @@ class UpdateUser(BaseModel):
     username: Optional[Annotated[str, StringConstraints(min_length=2, max_length=30)]] = None
     email: Optional[EmailStr] = None
     password: Optional[Password] = None
+    metadata: MetaData
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "username": "NewUsername",
+                    "email": "new_username@example.com",
+                    "password": {
+                        "old": "old password",
+                        "new": "new password"
+                    },
+                    "metadata": {
+                        "os": "IOS",
+                        "browser": "Safari",
+                        "device": "IPhone 15",
+                        "ip": "81.65.35.187"
+                    },
+                }
+            ]
+        }
+    }

@@ -29,9 +29,7 @@ class JWTTokenCreator(TokenCreator):
             "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60)
         }
         payload.update(kwargs)
-
-        print(payload)
-
+        
         token = jwt.encode(payload, TokenConfig.SECRET_KEY, algorithm=TokenConfig.ALGORITHM)
         return token
 
