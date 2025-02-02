@@ -1,12 +1,11 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, APIRouter, Request
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.security import HTTPBearer
 
+from project.middlewares import APIKeyMiddleware
 
 from .logger import logger
 from .database.mariadb import create_tables
@@ -38,19 +37,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class APIKeyMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, api_key: str):
-        super().__init__(app)
-        self.api_key = api_key
-
-    async def dispatch(self, request: Request, call_next):
-        api_key = request.headers.get("X-API-Key")
-        if not api_key == self.api_key:
-            return JSONResponse(status_code=401, content={"error": "Invalid API key"})
-        return await call_next(request)
-
 app.add_middleware(APIKeyMiddleware, api_key=os.getenv("API_KEY"))
-    
+bearer_scheme = HTTPBearer()
 
 router = APIRouter()
 router_v1 = APIRouter(prefix="/v1")
