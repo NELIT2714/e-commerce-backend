@@ -3,9 +3,9 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 
 from project import logger, router_v1
-from project.database.crud.users import get_user, sign_in, sign_up, update_account
+from project.database.crud.users import get_user, sign_in, sign_up, update_account, update_delivery_data, update_personal_data
 from project.functions import verify_token
-from project.routes.users.dto import LoginUser, NewUser, UpdateUser, PersonalData
+from project.routes.users.dto import LoginUser, NewUser, UpdateUser, PersonalData, DeliveryData
 
 users_router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -30,13 +30,20 @@ async def user_signin_endpoint(user_data: LoginUser):
 
 @users_router.patch("/update/account/")
 async def update_user_account_endpoint(account_data: UpdateUser, result_token = Depends(verify_token)):
-    await update_account(user_id=result_token.data["token_data"]["user_id"], account_data=account_data.model_dump(exclude_unset=True), token=result_token.token, user_data=account_data.model_dump())
+    await update_account(user_id=result_token.data["token_data"]["user_id"], account_data=account_data.model_dump(exclude_unset=True))
     return JSONResponse(status_code=status.HTTP_200_OK, content={"ok": True})
 
 
 @users_router.patch("/update/personal-data/")
 async def update_user_personal_data_endpoint(personal_data: PersonalData, result_token: str = Depends(verify_token)):
-    pass
+    await update_personal_data(user_id=result_token.data["token_data"]["user_id"], personal_data=personal_data.model_dump(exclude_unset=True))
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"ok": True})
+
+
+@users_router.patch("/update/delivery-data/")
+async def update_user_delivery_data_endpoint(delivery_data: DeliveryData, result_token: str = Depends(verify_token)):
+    await update_delivery_data(user_id=result_token.data["token_data"]["user_id"], delivery_data=delivery_data.model_dump(exclude_unset=True))
+    return JSONResponse(status_code=status.HTTP_200_OK, content={"ok": True})
 
 
 @users_router.delete("/delete/me/")

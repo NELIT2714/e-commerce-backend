@@ -1,3 +1,4 @@
+import asyncio
 import bcrypt
 
 from fastapi import HTTPException
@@ -11,36 +12,31 @@ from project.database import async_session
 from project.database.crud.sessions import create_session, delete_session
 from project.database.mariadb.models import Users
 
-from project.database.mariadb.models.users import Sessions
+from project.database.mariadb.models.users import DeliveryData, PersonalData, Sessions
 from project.utils import TokenService
 
 
 async def get_user_dict(user_object):
-    personal_data = None
-    delivery_data = None
-
-    if user_object.personal_data:
-        personal_data = {
-            "first_name": user_object.personal_data.first_name,
-            "last_name": user_object.personal_data.last_name,
-            "phone_number": user_object.personal_data.phone_number
-        }
-
-    if user_object.delivery_data:
-        delivery_data = {
-            "country": user_object.delivery_data.country,
-            "city": user_object.delivery_data.city,
-            "postcode": user_object.delivery_data.postcode,
-            "address": user_object.delivery_data.address
-        }
+    personal_data = user_object.personal_data
+    delivery_data = user_object.delivery_data
 
     return {
         "id": user_object.user_id,
         "username": user_object.username,
         "email": user_object.email,
-        "personal_data": personal_data,
-        "delivery_data": delivery_data
+        "personal_data": {
+            "first_name": personal_data.first_name,
+            "last_name": personal_data.last_name,
+            "phone_number": personal_data.phone_number
+        } if personal_data else None,
+        "delivery_data": {
+            "country": delivery_data.country,
+            "city": delivery_data.city,
+            "postcode": delivery_data.postcode,
+            "address": delivery_data.address
+        } if delivery_data else None,
     }
+
 
 
 async def get_users(dump: bool = False):
@@ -69,12 +65,11 @@ async def get_user(user_id: int = None, username: str = None, email: str = None,
                 selectinload(Users.delivery_data)
             )
 
-            if user_id:
-                query = query.filter_by(user_id=user_id)
-            if username:
-                query = query.filter_by(username=username)
-            if email:
-                query = query.filter_by(email=email)
+            fields = {"user_id": user_id, "username": username, "email": email}
+            for k, v in fields.items():
+                if v:
+                    query = query.filter(getattr(Users, k) == v)
+                    break
 
             user_result = await session_db.execute(query)
             user = user_result.scalar_one_or_none()
@@ -91,10 +86,15 @@ async def get_user(user_id: int = None, username: str = None, email: str = None,
 async def sign_up(user_data: dict):
     try:
         async with async_session() as session_db:
-            if await get_user(username=user_data["username"]):
+            user_available = await asyncio.gather(
+                get_user(username=user_data["username"]),
+                get_user(email=user_data["email"])
+            )
+
+            if user_available[0]:
                 raise HTTPException(status_code=400, detail="Username already in use")
             
-            if await get_user(email=user_data["email"]):
+            if user_available[1]:
                 raise HTTPException(status_code=400, detail="Email already in use")
 
             user = Users(
@@ -121,8 +121,7 @@ async def sign_up(user_data: dict):
 async def sign_in(user_data: dict):
     try:
         async with async_session() as session_db:
-            user = await get_user(username=user_data["username"])
-            if not user:
+            if not (user := await get_user(username=user_data["username"])):
                 raise HTTPException(status_code=404, detail="User not found")
 
             if not bcrypt.checkpw(user_data["password"].encode(), user.password_hash):
@@ -136,22 +135,23 @@ async def sign_in(user_data: dict):
         raise HTTPException(status_code=500, detail="Database error")
 
 
-async def update_account(user_id: int, account_data: dict, token: str, user_data: dict):
+async def update_account(user_id: int, account_data: dict):
     try:
         async with async_session() as session_db:
-            user = await get_user(user_id=user_id)
-            if not user:
+            if not (user := await get_user(user_id=user_id)):
                 raise HTTPException(status_code=404, detail="User not found")
-            
-            if account_data.get("username", False):
-                user.username = account_data["username"]
-            if account_data.get("email", False):
-                user.email = account_data["email"]
-            if account_data.get("password", False):
-                if not bcrypt.checkpw(account_data["password"]["old"].encode(), user.password_hash):
-                    raise HTTPException(status_code=401, detail="Incorrect old password")
-                user.password_hash = bcrypt.hashpw(account_data["password"]["new"].encode(), bcrypt.gensalt())
 
+            fields_to_update = ["username", "email"]
+            for field in fields_to_update:
+                if field in account_data:
+                    setattr(user, field, account_data[field])
+                    continue
+                
+            if (account_password := account_data.get("password", False)):
+                if not bcrypt.checkpw(account_password["old"].encode(), user.password_hash):
+                    raise HTTPException(status_code=401, detail="Incorrect old password")
+                setattr(user, "password_hash", bcrypt.hashpw(account_password["new"].encode(), bcrypt.gensalt()))
+            
             session_db.add(user)
             await session_db.commit()
 
@@ -159,6 +159,57 @@ async def update_account(user_id: int, account_data: dict, token: str, user_data
         logger.error(f"Database error: {e}")
         await session_db.rollback()
         raise HTTPException(status_code=500, detail="Database error")
+
+
+async def update_personal_data(user_id: int, personal_data: dict):
+    try:
+        async with async_session() as session_db:
+            if not (user := await get_user(user_id=user_id)):
+                raise HTTPException(status_code=404, detail="User not found")
+
+            if not (user_personal_data := user.personal_data):
+                session_db.add(PersonalData(user_id=user.user_id, **personal_data))
+                await session_db.commit()
+                return
+            
+            fields_to_update = ["first_name", "last_name", "phone_number"]
+            for field in fields_to_update:
+                if field in personal_data:
+                    setattr(user_personal_data, field, personal_data[field])
+
+            session_db.add(user_personal_data)
+            await session_db.commit()
+
+    except (err.MySQLError, SQLAlchemyError) as e:
+        logger.error(f"Database error: {e}")
+        await session_db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
+
+
+async def update_delivery_data(user_id: int, delivery_data: dict):
+    try:
+        async with async_session() as session_db:
+            if not (user := await get_user(user_id=user_id)):
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            if not (user_delivery_data := user.delivery_data):
+                session_db.add(DeliveryData(user_id=user.user_id, **delivery_data))
+                await session_db.commit()
+                return
+
+            fields_to_update = ["country", "city", "postcode", "address"]
+            for field in fields_to_update:
+                if field in delivery_data:
+                    setattr(user_delivery_data, field, delivery_data[field])
+
+            session_db.add(user_delivery_data)
+            await session_db.commit()
+
+    except (err.MySQLError, SQLAlchemyError) as e:
+        logger.error(f"Database error: {e}")
+        await session_db.rollback()
+        raise HTTPException(status_code=500, detail="Database error")
+
 
 #
 # async def update_category(category_id: int, category_data: dict, dump: bool = False):
