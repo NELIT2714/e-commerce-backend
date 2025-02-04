@@ -1,7 +1,7 @@
 import asyncio
 import bcrypt
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from pymysql import err
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -12,46 +12,71 @@ from project.database import async_session
 from project.database.crud.sessions import create_session, delete_session
 from project.database.mariadb.models import Users
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from project.database.mariadb.models.users import DeliveryData, PersonalData, Sessions
 from project.utils import TokenService
 
 
-async def get_user_dict(user_object):
-    personal_data = user_object.personal_data
-    delivery_data = user_object.delivery_data
 
-    return {
-        "id": user_object.user_id,
-        "username": user_object.username,
-        "email": user_object.email,
-        "personal_data": {
-            "first_name": personal_data.first_name,
-            "last_name": personal_data.last_name,
-            "phone_number": personal_data.phone_number
-        } if personal_data else None,
-        "delivery_data": {
-            "country": delivery_data.country,
-            "city": delivery_data.city,
-            "postcode": delivery_data.postcode,
-            "address": delivery_data.address
-        } if delivery_data else None,
-    }
+class UserRepository:
+    def __init__(self, session_db: AsyncSession):
+        self.session_db = session_db
+
+    async def get(self, user_id: int = None, username: str = None, email: str = None):
+        try:
+            query = select(Users).options(selectinload(Users.personal_data), selectinload(Users.delivery_data))
+
+            fields = {"user_id": user_id, "username": username, "email": email}
+            for k, v in fields.items():
+                if v:
+                    query = query.filter(getattr(Users, k) == v)
+                    break
+
+            user_query = await self.session_db.execute(query)
+            user = user_query.scalar_one_or_none()
+
+            return user
+        except (err.MySQLError, SQLAlchemyError) as e:
+            logger.error(f"Database error: {e}")
+            raise HTTPException(status_code=500, detail="Database error")
+
+
+# async def get_user_dict(user_object):
+#     personal_data = user_object.personal_data
+#     delivery_data = user_object.delivery_data
+
+#     return {
+#         "id": user_object.user_id,
+#         "username": user_object.username,
+#         "email": user_object.email,
+#         "personal_data": {
+#             "first_name": personal_data.first_name,
+#             "last_name": personal_data.last_name,
+#             "phone_number": personal_data.phone_number
+#         } if personal_data else None,
+#         "delivery_data": {
+#             "country": delivery_data.country,
+#             "city": delivery_data.city,
+#             "postcode": delivery_data.postcode,
+#             "address": delivery_data.address
+#         } if delivery_data else None,
+#     }
 
 
 
-async def get_users(dump: bool = False):
-    try:
-        async with async_session() as session_db:
-            users_query = await session_db.execute(select(Users).options(
-                selectinload(Users.personal_data),
-                selectinload(Users.delivery_data),
-            ))
-            users = users_query.scalars().all()
+# async def get_users(dump: bool = False):
+#     try:
+#         async with async_session() as session_db:
+#             users_query = await session_db.execute(select(Users).options(
+#                 selectinload(Users.personal_data),
+#                 selectinload(Users.delivery_data),
+#             ))
+#             users = users_query.scalars().all()
 
-            return [await get_user_dict(user) for user in users] if dump else users
-    except (err.MySQLError, SQLAlchemyError) as e:
-        logger.error(f"Database error: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
+#             return [await get_user_dict(user) for user in users] if dump else users
+#     except (err.MySQLError, SQLAlchemyError) as e:
+#         logger.error(f"Database error: {e}")
+#         raise HTTPException(status_code=500, detail="Database error")
 
 
 async def get_user(user_id: int = None, username: str = None, email: str = None, dump: bool = False):
