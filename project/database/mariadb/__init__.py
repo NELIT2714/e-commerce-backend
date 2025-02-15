@@ -28,3 +28,8 @@ async def check_mariadb_connection():
     except Exception as e:
         print(f"Database connection error: {e}")
         return {"healthy": False}
+
+
+async def get_db():
+    async with async_session() as session_db:
+        yield session_db

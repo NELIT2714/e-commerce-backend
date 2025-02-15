@@ -1,6 +1,6 @@
-# app/routes/dto/user.py
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional
+from datetime import datetime
 
 
 class PersonalDataOut(BaseModel):
@@ -9,7 +9,7 @@ class PersonalDataOut(BaseModel):
     phone_number: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class DeliveryDataOut(BaseModel):
@@ -19,15 +19,30 @@ class DeliveryDataOut(BaseModel):
     address: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class SessionOut(BaseModel):
+    session_id: int
+    user_id: int
+    token: str
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime):
+        return datetime.strftime(value, "%Y-%m-%d %H:%M:%S")
+
+    class Config:
+        from_attributes = True
 
 
 class UserOut(BaseModel):
     user_id: int
     username: str
     email: str
+    sessions: Optional[list[SessionOut]]
     personal_data: Optional[PersonalDataOut]
     delivery_data: Optional[DeliveryDataOut]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

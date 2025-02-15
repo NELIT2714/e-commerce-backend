@@ -47,11 +47,22 @@ class Sessions(Base):
 
     session_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("tbl_users.user_id"), index=True)
-    os = Column(String(50), nullable=False)
-    browser = Column(String(50), nullable=False)
-    device = Column(String(100), nullable=False)
-    ip = Column(String(20), nullable=False)
     token = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
     user = relationship("Users", back_populates="sessions")
+    data = relationship("SessionsData", back_populates="session", uselist=False)
+
+
+class SessionsData(Base):
+    __tablename__ = "tbl_users_sessions_data"
+
+    session_data_id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("tbl_users_sessions.session_id"), index=True)
+    os = Column(String(50), nullable=False)
+    browser = Column(String(50), nullable=False)
+    device = Column(String(100), nullable=False)
+    ip = Column(String(20), nullable=False)
+
+    session = relationship("Sessions", back_populates="data")
+

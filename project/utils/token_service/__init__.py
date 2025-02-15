@@ -1,7 +1,7 @@
 import os
-
 import jwt
 import datetime
+
 from abc import ABC, abstractmethod
 
 
@@ -26,10 +26,10 @@ class TokenVerifier(ABC):
 class JWTTokenCreator(TokenCreator):
     async def create_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
         payload = {
-            "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60)
+            "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60) * 60
         }
         payload.update(kwargs)
-        
+
         token = jwt.encode(payload, TokenConfig.SECRET_KEY, algorithm=TokenConfig.ALGORITHM)
         return token
 
@@ -40,6 +40,7 @@ class JWTTokenVerifier(TokenVerifier):
             decoded_data = jwt.decode(token, TokenConfig.SECRET_KEY, algorithms=[TokenConfig.ALGORITHM])
             expiration_time = decoded_data["exp"]
             decoded_data.pop("exp", None)
+
             return {
                 "token_status": True,
                 "token_data": {
