@@ -1,13 +1,14 @@
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from fastapi import HTTPException, status
 from project.database.mariadb.models.users import Sessions, Users
 
+if TYPE_CHECKING:
+    from project.database.crud import SessionRepository
+
 
 class SessionService:
-    from project.database.crud import SessionRepository
-    
-    def __init__(self, session_repository: SessionRepository):
+    def __init__(self, session_repository: "SessionRepository"):
         self.session_repository = session_repository
 
 

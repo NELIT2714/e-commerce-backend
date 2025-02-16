@@ -1,4 +1,4 @@
-from fastapi import Request
+from fastapi import Request, status
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -12,6 +12,6 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         api_key = request.headers.get("X-API-Key")
         if not api_key == self.api_key:
-            return JSONResponse(status_code=403, content={"error": "Invalid API key"})
+            return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"error": "Invalid API key"})
         return await call_next(request)
     

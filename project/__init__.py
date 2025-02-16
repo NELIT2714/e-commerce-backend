@@ -23,7 +23,7 @@ async def lifespan(app_class: FastAPI):
 app = FastAPI(
     title="E-commerce API",
     debug=True if os.getenv("MODE") == "DEV" else False,
-    docs_url="/",
+    docs_url="/" if os.getenv("MODE") == "DEV" else None,
     redoc_url="/redoc" if os.getenv("MODE") == "DEV" else None,
     lifespan=lifespan
 )

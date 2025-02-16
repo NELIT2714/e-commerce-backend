@@ -24,8 +24,6 @@ async def verify_token(http_authorization: HTTPAuthorizationCredentials = Depend
     token_service = TokenService()
     token_data = await token_service.check_token(token)
 
-    # print(token_data)
-
     if not token_data["token_status"]:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     return TokenUserData(data=token_data, token=token)

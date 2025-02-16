@@ -43,8 +43,7 @@ class SessionRepository(ISessionRepository):
         
         try:
             user_session_query = await session_db.execute(select(Sessions).options(selectinload(Sessions.data)).filter_by(token=token))
-            user_session = user_session_query.scalar_one_or_none()
-            return user_session
+            return user_session_query.scalar_one_or_none()
         except (err.MySQLError, SQLAlchemyError) as e:
             await session_db.rollback()
             logger.error(f"Database error: {e}")
@@ -87,15 +86,11 @@ class SessionRepository(ISessionRepository):
 
 
     async def delete_session(self, token: str) -> Optional[HTTPException]:
+        if not (user_session := await self.get_session(token=token)):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
         session_db = await self._session_db_manager.get_session()
-        
         try:
-            user_session_query = await session_db.execute(select(Sessions).options(selectinload(Sessions.data)).filter_by(token=token))
-            user_session = user_session_query.scalar_one_or_none()
-
-            if not user_session:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
-
             tasks = [session_db.delete(user_session)]
             if user_session.data:
                 tasks.append(session_db.delete(user_session.data))

@@ -25,6 +25,7 @@ class NewUser(BaseModel):
         if not password == repeated_password:
             raise HTTPException(status_code=400, detail="Passwords do not match")
         return values
+        
     
     model_config = {
         "json_schema_extra": {
