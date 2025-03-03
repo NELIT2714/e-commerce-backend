@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from project import router_v1
 from project.database.crud.categories import get_category, create_category, get_categories, update_category, \
     delete_category
+from project.database.crud import CategoriesRepository
 from project.routes.categories.dto import NewCategory, UpdateCategory
 
 categories_router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -17,8 +18,10 @@ async def get_categories_endpoint():
 
 @categories_router.get("/get/{category_id}/")
 async def get_category_endpoint(category_id: int):
-    category = await get_category(category_id, dump=True)
-    return JSONResponse(status_code=200, content={"category": category})
+    categories_repository = CategoriesRepository()
+    category = await categories_repository.get_category(category_id=category_id)
+    return category
+    # return JSONResponse(status_code=200, content={"category": category})
 
 
 @categories_router.post("/create/")

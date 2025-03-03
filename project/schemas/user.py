@@ -22,11 +22,22 @@ class DeliveryDataOut(BaseModel):
         from_attributes = True
 
 
+class SessionDataOut(BaseModel):
+    os: str
+    browser: str
+    device: str
+    ip: str
+
+    class Config:
+        from_attributes = True
+
+
 class SessionOut(BaseModel):
     session_id: int
     user_id: int
-    token: str
+    # token: str
     created_at: datetime
+    data: SessionDataOut
 
     @field_serializer("created_at")
     def serialize_created_at(self, value: datetime):

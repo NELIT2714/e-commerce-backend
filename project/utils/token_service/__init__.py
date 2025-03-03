@@ -11,31 +11,31 @@ class TokenConfig:
     DEFAULT_TTL = int(os.getenv("JWT_DEFAULT_TTL"))
 
 
-class TokenCreator(ABC):
+class ITokenService(ABC):
     @abstractmethod
-    async def create_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
+    async def generate_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
         pass
 
-
-class TokenVerifier(ABC):
     @abstractmethod
     async def verify_token(self, token: str) -> dict:
         pass
 
 
-class JWTTokenCreator(TokenCreator):
-    async def create_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
+class TokenService:
+    def __init__(self):
+        pass
+
+    async def generate_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs) -> str:
         payload = {
-            "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60) * 60
+            "exp": int(datetime.datetime.now().timestamp()) + (ttl * 60) * 60,
+            **kwargs
         }
-        payload.update(kwargs)
+        # payload.update(kwargs)
 
         token = jwt.encode(payload, TokenConfig.SECRET_KEY, algorithm=TokenConfig.ALGORITHM)
         return token
 
-
-class JWTTokenVerifier(TokenVerifier):
-    async def verify_token(self, token: str) -> dict:
+    async def verify_token(self, token: str):
         try:
             decoded_data = jwt.decode(token, TokenConfig.SECRET_KEY, algorithms=[TokenConfig.ALGORITHM])
             expiration_time = decoded_data["exp"]
@@ -52,15 +52,7 @@ class JWTTokenVerifier(TokenVerifier):
             return {"token_status": False, "detail": "Token expired"}
         except jwt.InvalidTokenError:
             return {"token_status": False, "detail": "Invalid token"}
+        
+    # async def check_token(self, token: str):
 
-
-class TokenService:
-    def __init__(self, token_creator: TokenCreator = JWTTokenCreator(), token_verifier: TokenVerifier = JWTTokenVerifier()):
-        self._token_creator = token_creator
-        self._token_verifier = token_verifier
-
-    async def generate_token(self, ttl: int = TokenConfig.DEFAULT_TTL, **kwargs):
-        return await self._token_creator.create_token(ttl=ttl, **kwargs)
-
-    async def check_token(self, token: str):
-        return await self._token_verifier.verify_token(token)
+        

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from project.utils import SessionDBManager
 
 
-class ISessionRepository(ABC):
+class ISessionsRepository(ABC):
     @abstractmethod
     async def get_session(self, token: str) -> Union[HTTPException, Sessions]:
         pass
@@ -33,7 +33,7 @@ class ISessionRepository(ABC):
         pass
 
 
-class SessionRepository(ISessionRepository):
+class SessionsRepository(ISessionsRepository):
     def __init__(self, session_db_manager: "SessionDBManager"):
         self._session_db_manager = session_db_manager
 

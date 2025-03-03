@@ -1,2 +1,3 @@
-from .user_repository import UserRepository
-from .session_repository import SessionRepository
+from .users_repository import UsersRepository
+from .sessions_repository import SessionsRepository
+from .categories_repository import CategoriesRepository

@@ -10,7 +10,7 @@ class Users(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(30), unique=True, index=True)
     email = Column(String(254), unique=True, index=True)
-    password_hash = Column(LargeBinary, nullable=False)
+    password_hash = Column(LargeBinary(60), nullable=False)
 
     sessions = relationship("Sessions", back_populates="user", uselist=True)
     personal_data = relationship("PersonalData", back_populates="user", uselist=False)
